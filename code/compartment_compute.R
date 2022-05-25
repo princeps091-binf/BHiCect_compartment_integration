@@ -61,9 +61,14 @@ tmp_res<-"100kb"
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
 
 chr_mat<-full_f_mat(chr_dat,res_num[tmp_res],"zscore")
+range_bin<-range(unique(c(chr_dat$X1,chr_dat$X2)))
+f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
+
+dimnames(chr_mat)<-list(f_chr_bin,f_chr_bin)
 image(as.matrix(chr_mat),col=viridis(100))
 empty_rows<-which(apply(chr_mat,1,function(x)all(x==0)))
 empty_cols<-which(apply(chr_mat,2,function(x)all(x==0)))
+
 ok_chr_mat<-chr_mat[-empty_rows,]
 ok_chr_mat<-ok_chr_mat[,-empty_cols]
 image(as.matrix(ok_chr_mat),col=viridis(100))

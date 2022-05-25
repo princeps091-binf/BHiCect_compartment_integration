@@ -38,43 +38,6 @@ compute_chr_res_zscore_fn<-function(dat_file,cl_res,chromo,res_num){
   chr_dat<-chr_dat%>%mutate(pred=pred_vec,zscore=(chr_dat$lw-pred_vec)/hic_gam$sig2)
   return(chr_dat %>% mutate(res=cl_res,chr=chromo))
 }
-
-full_bpt_mat<-function(cl_mat,res,var){
-  
-  range_5kb<-range(as.numeric(unique(c(cl_mat$X1,cl_mat$X2))))
-  bin_5kb<-seq(range_5kb[1],range_5kb[2],by=res)
-  #add the bins not present in original Hi-C dataset
-  #miss_bin<-bin_5kb[which(!(bin_5kb %in% unique(c(mat_df$X1,mat_df$X2))))]
-  
-  id_conv<-seq_along(bin_5kb)
-  names(id_conv)<-bin_5kb
-  
-  cl_mat$ego_id<-id_conv[as.character(cl_mat$X1)]
-  cl_mat$alter_id<-id_conv[as.character(cl_mat$X2)]
-  
-  #chr_mat<-sparseMatrix(i=cl_mat$ego_id,cl_mat$alter_id,x=sqrt(-log10(cl_mat$pois.pval)),symmetric = T)
-  chr_mat<-sparseMatrix(i=cl_mat$ego_id,cl_mat$alter_id,x=as.numeric(cl_mat[[var]]))
-  return(chr_mat)
-}
-
-full_f_mat<-function(cl_mat,res,var){
-  
-  range_5kb<-range(as.numeric(unique(c(cl_mat$X1,cl_mat$X2))))
-  bin_5kb<-seq(range_5kb[1],range_5kb[2],by=res)
-  #add the bins not present in original Hi-C dataset
-  #miss_bin<-bin_5kb[which(!(bin_5kb %in% unique(c(mat_df$X1,mat_df$X2))))]
-  
-  id_conv<-seq_along(bin_5kb)
-  names(id_conv)<-bin_5kb
-  
-  cl_mat$ego_id<-id_conv[as.character(cl_mat$X1)]
-  cl_mat$alter_id<-id_conv[as.character(cl_mat$X2)]
-  
-  #chr_mat<-sparseMatrix(i=cl_mat$ego_id,cl_mat$alter_id,x=sqrt(-log10(cl_mat$pois.pval)),symmetric = T)
-  chr_mat<-sparseMatrix(i=cl_mat$ego_id,cl_mat$alter_id,x=as.numeric(cl_mat[[var]]),symmetric = T)
-  return(chr_mat)
-}
-
 #-----------------------------------------
 HiC_dat_folder<-"~/Documents/multires_bhicect/data/GM12878/"
 HiC_spec_folder<-"~/Documents/multires_bhicect/data/GM12878/spec_res/"
@@ -122,25 +85,11 @@ intersect_size<-unlist(lapply(
     width),
   sum))
 
-# union_size<-unlist(lapply(
-#   lapply(
-#     lapply(
-#       punion(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits]),IRanges::reduce),
-#     width),
-#   sum))
-
 bin_cl_inter_tbl<-bin_cl_inter_tbl %>% 
   mutate(inter.size=intersect_size) %>% 
-#  mutate(union.size=union_size)%>%
-#  mutate(jaccard=inter.size/union.size) %>% 
   mutate(bin=tmp_bins[queryHits],
          cl=chr_cl_tbl$cl[subjectHits]) %>% 
   mutate(cl.lvl=node_lvl[cl])
-
-# max_jaccard_tbl<-bin_cl_inter_tbl %>% 
-#   group_by(bin) %>% 
-#   slice_max(jaccard) %>% 
-#   arrange(jaccard)
 
 max_lvl_tbl<-bin_cl_inter_tbl %>% 
   filter(inter.size==res_num[tmp_res]) %>% 
@@ -165,25 +114,9 @@ bin_inter_tbl<-expand_grid(X1=names(bin_to_cl_vec),X2=names(bin_to_cl_vec)) %>%
 
 bin_inter_tbl<-bin_inter_tbl %>% 
   mutate(bpt.d=tmp_d[as.matrix(bin_inter_tbl[,3:4])])
-chr_bpt_mat<-full_bpt_mat(bin_inter_tbl,res_num[tmp_res],"bpt.d")
-image(as.matrix(chr_bpt_mat),col=viridis(100))
-d<-as.dist(chr_bpt_mat)
-o <- seriate(d,method = "HC")
-image(as.matrix(chr_bpt_mat)[get_order(o),get_order(o)],col=viridis(100))
+
 
 chr_mat<-full_f_mat(chr_dat,res_num[tmp_res],"zscore")
-image(as.matrix(chr_mat),col=viridis(100))
-image(as.matrix(chr_mat)[get_order(o),get_order(o)],col=viridis(100))
-
-cor_mat<-cor(as.matrix(chr_mat))
-
-image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
-
-png(paste0('./img/',chromo,"_cor_",tmp_res,"_bpt_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
-dev.off()
 
 range_bin<-range(unique(c(chr_dat$X1,chr_dat$X2)))
 f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
