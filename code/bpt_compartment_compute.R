@@ -81,7 +81,7 @@ HiC_spec_folder<-"~/Documents/multires_bhicect/data/GM12878/spec_res/"
 
 
 
-chromo<-"chr22"
+chromo<-"chr19"
 tmp_res<-"100kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
@@ -168,3 +168,9 @@ image(as.matrix(chr_mat)[get_order(o),get_order(o)],col=viridis(100))
 cor_mat<-cor(as.matrix(chr_mat))
 
 image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
+
+png(paste0('./img/',chromo,"_cor_",tmp_res,"_bpt_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
+dev.off()

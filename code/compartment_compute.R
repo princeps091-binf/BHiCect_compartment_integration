@@ -55,7 +55,7 @@ full_f_mat<-function(cl_mat,res,var){
 #-----------------------------------------
 HiC_dat_folder<-"~/Documents/multires_bhicect/data/GM12878/"
 
-chromo<-"chr1"
+chromo<-"chr19"
 tmp_res<-"100kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
@@ -74,3 +74,9 @@ image(cor_mat,col=viridis(100))
 eigen_idx<-sort(svd(cor_mat)$v[,1],index.return=T)$ix
 image(as.matrix(ok_chr_mat)[eigen_idx,eigen_idx],col=viridis(100))
 image(cor_mat[eigen_idx,eigen_idx],col=viridis(100))
+
+png(paste0('./img/',chromo,"_cor_",tmp_res,"_eigen_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(cor_mat[eigen_idx,eigen_idx],col=viridis(100))
+dev.off()
