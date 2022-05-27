@@ -38,13 +38,32 @@ compute_chr_res_zscore_fn<-function(dat_file,cl_res,chromo,res_num){
   chr_dat<-chr_dat%>%mutate(pred=pred_vec,zscore=(chr_dat$lw-pred_vec)/hic_gam$sig2)
   return(chr_dat %>% mutate(res=cl_res,chr=chromo))
 }
+
+full_f_mat<-function(cl_mat,res,var){
+  
+  range_5kb<-range(as.numeric(unique(c(cl_mat$X1,cl_mat$X2))))
+  bin_5kb<-seq(range_5kb[1],range_5kb[2],by=res)
+  #add the bins not present in original Hi-C dataset
+  #miss_bin<-bin_5kb[which(!(bin_5kb %in% unique(c(mat_df$X1,mat_df$X2))))]
+  
+  id_conv<-seq_along(bin_5kb)
+  names(id_conv)<-bin_5kb
+  
+  cl_mat$ego_id<-id_conv[as.character(cl_mat$X1)]
+  cl_mat$alter_id<-id_conv[as.character(cl_mat$X2)]
+  
+  #chr_mat<-sparseMatrix(i=cl_mat$ego_id,cl_mat$alter_id,x=sqrt(-log10(cl_mat$pois.pval)),symmetric = T)
+  chr_mat<-sparseMatrix(i=cl_mat$ego_id,cl_mat$alter_id,x=as.numeric(cl_mat[[var]]),symmetric = T)
+  return(chr_mat)
+}
+
 #-----------------------------------------
 HiC_dat_folder<-"~/Documents/multires_bhicect/data/GM12878/"
 HiC_spec_folder<-"~/Documents/multires_bhicect/data/GM12878/spec_res/"
 
 
 
-chromo<-"chr22"
+chromo<-"chr1"
 tmp_res<-"100kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
@@ -140,14 +159,13 @@ eig_dist_tbl<-t(combn(names(eig_vec),2)) %>%
   mutate(eig.dist=(abs(binA.eig-binB.eig)),
          same.comp=ifelse(sign(binA.eig)*sign(binB.eig)<0,"diff","same"))
 
-bin_inter_tbl %>% 
-  left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
-  filter(!(is.na(eig.dist))) %>%
-  mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
-  ggplot(.,aes(bpt.d,eig.dist))+
-  geom_smooth()+
-  geom_point(alpha=0.01)+
-  facet_grid(.~same.comp,scales="free")
+eig_dist_tbl %>% 
+  mutate(V1=as.numeric(V1),
+         V2=as.numeric(V2)) %>% 
+  inner_join(.,chr_dat,by=c("V1"="X1","V2"="X2")) %>% 
+  ggplot(.,aes(same.comp,zscore))+
+  geom_violin()
+  
 
 bin_inter_tbl %>% 
   left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
@@ -155,3 +173,17 @@ bin_inter_tbl %>%
   mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
   ggplot(.,aes(same.comp,bpt.d))+
   geom_boxplot()
+
+
+bin_inter_tbl %>% 
+  mutate(X1=as.numeric(X1),
+         X2=as.numeric(X2)) %>% 
+  inner_join(.,chr_dat %>% 
+               dplyr::select(X1,X2,zscore)) %>% 
+  inner_join(.,eig_dist_tbl %>% 
+              mutate(V1=as.numeric(V1),
+                     V2=as.numeric(V2)),by=c("X1"="V1","X2"="V2")) %>% 
+  ggplot(.,aes(bpt.d,eig.dist))+
+  geom_density_2d_filled()+
+  geom_smooth(color="red")#+
+  facet_grid(.~same.comp,scale="free")
