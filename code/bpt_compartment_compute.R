@@ -201,6 +201,10 @@ cor_mat<-cor(as.matrix(ok_chr_mat))
 
 eig_vec<-svd(cor_mat)$v[,1]
 names(eig_vec)<-colnames(ok_chr_mat)
+eig_idx<-sort(eig_vec,index.return=T)$ix
+
+image(cor_mat[eig_idx,eig_idx],col=viridis(100))
+
 
 eig_dist_tbl<-t(combn(names(eig_vec),2)) %>% 
   as_tibble %>% 
@@ -213,11 +217,10 @@ bin_inter_tbl %>%
   left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
   filter(!(is.na(eig.dist))) %>%
   mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
-  ggplot(.,aes(bpt.d,eig.dist))+
-  geom_smooth()+
-  geom_point(alpha=0.01)+
-  facet_grid(.~same.comp,scales="free")
-
+  ggplot(.,aes(as.factor(bpt.d),eig.dist))+
+#  geom_smooth()+
+#  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
+  geom_boxplot()
 bin_inter_tbl %>% 
   left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
   filter(!(is.na(eig.dist))) %>%
