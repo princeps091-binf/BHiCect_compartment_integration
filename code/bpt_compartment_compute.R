@@ -81,7 +81,7 @@ HiC_spec_folder<-"~/Documents/multires_bhicect/data/GM12878/spec_res/"
 
 
 
-chromo<-"chr22"
+chromo<-"chr21"
 tmp_res<-"100kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
@@ -220,7 +220,8 @@ bin_inter_tbl %>%
   ggplot(.,aes(as.factor(bpt.d),eig.dist))+
 #  geom_smooth()+
 #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
-  geom_boxplot()
+  geom_boxplot(outlier.size=0.1) + geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
+
 bin_inter_tbl %>% 
   left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
   filter(!(is.na(eig.dist))) %>%
