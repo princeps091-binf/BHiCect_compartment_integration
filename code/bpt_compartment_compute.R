@@ -227,4 +227,4 @@ bin_inter_tbl %>%
   filter(!(is.na(eig.dist))) %>%
   mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
   ggplot(.,aes(same.comp,bpt.d))+
-  geom_boxplot()
+  geom_boxplot(outlier.size=0.1)
