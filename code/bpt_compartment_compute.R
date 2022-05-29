@@ -115,19 +115,21 @@ plan(sequential)
 cl_GRange_l<-GRangesList(chr_cl_tbl$GRange)
 bin_cl_inter_tbl<-findOverlaps(chr_bin_GRange,cl_GRange_l) %>% 
   as_tibble
-# Make parallel
-intersect_size<-unlist(lapply(
-  lapply(
-    pintersect(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits]),
-    width),
-  sum))
 
-# union_size<-unlist(lapply(
-#   lapply(
-#     lapply(
-#       punion(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits]),IRanges::reduce),
-#     width),
-#   sum))
+cl_bin_intersect<-pintersect(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits])
+
+plan(multisession,workers=5)
+intersect_size<-future_map_int(1:length(cl_bin_intersect),function(i){
+  sum(IRanges::width(cl_bin_intersect[[i]]))
+})
+plan(sequential)
+
+cl_bin_union<-punion(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits])
+plan(multisession,workers=5)
+union_size<-future_map_int(1:length(cl_bin_union),function(i){
+  sum(IRanges::width(IRanges::reduce(cl_bin_union[[i]])))
+})
+plan(sequential)
 
 bin_cl_inter_tbl<-bin_cl_inter_tbl %>% 
   mutate(inter.size=intersect_size) %>% 
