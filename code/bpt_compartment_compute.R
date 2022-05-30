@@ -206,21 +206,22 @@ eig_idx<-sort(eig_vec,index.return=T)$ix
 image(cor_mat[eig_idx,eig_idx],col=viridis(100))
 
 
-eig_dist_tbl<-t(combn(names(eig_vec),2)) %>% 
-  as_tibble %>% 
-  mutate(binA.eig=eig_vec[V1],
-         binB.eig=eig_vec[V2]) %>% 
+eig_dist_tbl<-expand_grid(X1=names(eig_vec),X2=names(eig_vec)) %>% 
+  mutate(binA.eig=eig_vec[X1],
+         binB.eig=eig_vec[X2]) %>% 
   mutate(eig.dist=(abs(binA.eig-binB.eig)),
          same.comp=ifelse(sign(binA.eig)*sign(binB.eig)<0,"diff","same"))
 
+bpt_d_break<-quantile(percent_rank(bin_inter_tbl$bpt.d),seq(0,1,length.out=11))
 bin_inter_tbl %>% 
-  left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
+  inner_join(.,eig_dist_tbl) %>% 
   filter(!(is.na(eig.dist))) %>%
+  mutate(bpt.d2=findInterval(percent_rank(bin_inter_tbl$bpt.d),bpt_d_break)) %>% 
   mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
-  ggplot(.,aes(as.factor(bpt.d),eig.dist))+
+  ggplot(.,aes(as.factor(bpt.d2),eig.dist))+
 #  geom_smooth()+
 #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
-  geom_boxplot(outlier.size=0.1) + geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
+  geom_boxplot(outlier.size=0.1) + geom_smooth(mapping = aes(bpt.d2,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
 
 bin_inter_tbl %>% 
   left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
