@@ -212,6 +212,18 @@ eig_dist_tbl<-expand_grid(X1=names(eig_vec),X2=names(eig_vec)) %>%
   mutate(eig.dist=(abs(binA.eig-binB.eig)),
          same.comp=ifelse(sign(binA.eig)*sign(binB.eig)<0,"diff","same"))
 
+comp_mat<-matrix(NA,nrow=nrow(cor_mat),ncol=ncol(cor_mat))
+dimnames(comp_mat)<-list(rownames(cor_mat)[eig_idx],colnames(cor_mat)[eig_idx])
+
+tmp_tbl<-eig_dist_tbl %>% 
+  filter(same.comp=="same") %>% 
+  mutate(comp=sign(binA.eig))
+comp_mat[as.matrix(tmp_tbl %>% filter(comp==1) %>% dplyr::select(X1,X2))]<-1
+comp_mat[as.matrix(tmp_tbl %>% filter(comp== -1) %>% dplyr::select(X1,X2))]<- -1
+
+image(as.matrix(comp_mat),col=viridis(100))
+
+
 bpt_d_break<-quantile(percent_rank(bin_inter_tbl$bpt.d),seq(0,1,length.out=11))
 bin_inter_tbl %>% 
   inner_join(.,eig_dist_tbl) %>% 
