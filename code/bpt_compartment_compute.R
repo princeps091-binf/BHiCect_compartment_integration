@@ -212,7 +212,7 @@ eig_dist_tbl<-expand_grid(X1=names(eig_vec),X2=names(eig_vec)) %>%
   mutate(eig.dist=(abs(binA.eig-binB.eig)),
          same.comp=ifelse(sign(binA.eig)*sign(binB.eig)<0,"diff","same"))
 
-comp_mat<-matrix(NA,nrow=nrow(cor_mat),ncol=ncol(cor_mat))
+comp_mat<-matrix(0,nrow=nrow(cor_mat),ncol=ncol(cor_mat))
 dimnames(comp_mat)<-list(rownames(cor_mat)[eig_idx],colnames(cor_mat)[eig_idx])
 
 tmp_tbl<-eig_dist_tbl %>% 

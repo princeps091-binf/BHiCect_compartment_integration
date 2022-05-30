@@ -182,17 +182,22 @@ for(chromo in chr_set){
            chr=chromo)
   
 }
-
+chr_res_l<-lapply(chr_res_l,function(x){
+  bpt_d_break<-quantile(percent_rank(x$bpt.d),seq(0,1,length.out=11))
+  return(x %>% 
+    mutate(bpt.d2=findInterval(percent_rank(x$bpt.d),bpt_d_break)))
+})
 out_tbl<-do.call(bind_rows,chr_res_l)
 write_tsv(out_tbl,file = out_file)
 
 
 gg_tmp<-out_tbl %>% 
   filter(!(is.na(eig.dist))) %>%
-  ggplot(.,aes(as.factor(bpt.d),eig.dist))+
+  ggplot(.,aes(as.factor(bpt.d2),eig.dist))+
   #  geom_smooth()+
   #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
   geom_boxplot(outlier.size=0.1) #+ geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
+ggsave("~/data_transfer/GM12878_bpt_vs_eig_dist_100kb_box.png",gg_tmp)
 
 gg_tmp<-out_tbl %>% 
   filter(!(is.na(eig.dist))) %>%
