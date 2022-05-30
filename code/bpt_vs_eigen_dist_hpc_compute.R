@@ -6,7 +6,6 @@ library(data.tree)
 library(GenomicRanges)
 library(furrr)
 library(igraph)
-library(seriation)
 library(tidyverse)
 
 #--------------------------------
@@ -60,6 +59,8 @@ full_f_mat<-function(cl_mat,res,var){
 #-----------------------------------------
 HiC_dat_folder<-"/storage/mathelierarea/processed/vipin/group/HiC_data/GM12878/"
 HiC_spec_folder<-"/storage/mathelierarea/processed/vipin/group/HiC_data/GM12878/spec_res/"
+out_file<-"~/data_transfer/GM12878_eig_bpt_dist_100kb.tsv"
+
 chr_set<-str_split_fixed(grep("^chr",list.files(HiC_spec_folder),value=T),"_",2)[,1]
 
 tmp_res<-"100kb"
@@ -177,8 +178,25 @@ for(chromo in chr_set){
   chr_res_l[[chromo]]<-bin_inter_tbl %>% 
     inner_join(.,eig_dist_tbl) %>% 
     filter(!(is.na(eig.dist))) %>%
-    mutate(gdist=abs(as.numeric(X1)-as.numeric(X2)))
+    mutate(gdist=abs(as.numeric(X1)-as.numeric(X2)),
+           chr=chromo)
   
 }
 
 out_tbl<-do.call(bind_rows,chr_res_l)
+write_tsv(out_tbl,file = out_file)
+
+
+gg_tmp<-out_tbl %>% 
+  filter(!(is.na(eig.dist))) %>%
+  ggplot(.,aes(as.factor(bpt.d),eig.dist))+
+  #  geom_smooth()+
+  #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
+  geom_boxplot(outlier.size=0.1) #+ geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
+
+gg_tmp<-out_tbl %>% 
+  filter(!(is.na(eig.dist))) %>%
+  ggplot(.,aes(bpt.d,same.comp))+
+  #  geom_smooth()+
+  #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
+  geom_boxplot(outlier.size=0.1) #+ geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
