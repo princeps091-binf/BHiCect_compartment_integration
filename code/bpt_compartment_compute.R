@@ -81,7 +81,7 @@ HiC_spec_folder<-"~/Documents/multires_bhicect/data/GM12878/spec_res/"
 
 
 
-chromo<-"chr21"
+chromo<-"chr19"
 tmp_res<-"100kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
@@ -167,35 +167,58 @@ bin_inter_tbl<-expand_grid(X1=names(bin_to_cl_vec),X2=names(bin_to_cl_vec)) %>%
 
 bin_inter_tbl<-bin_inter_tbl %>% 
   mutate(bpt.d=tmp_d[as.matrix(bin_inter_tbl[,3:4])])
-chr_bpt_mat<-full_bpt_mat(bin_inter_tbl,res_num[tmp_res],"bpt.d")
-image(as.matrix(chr_bpt_mat),col=viridis(100))
-d<-as.dist(chr_bpt_mat)
-o <- seriate(d,method = "HC")
-image(as.matrix(chr_bpt_mat)[get_order(o),get_order(o)],col=viridis(100))
 
 chr_mat<-full_f_mat(chr_dat,res_num[tmp_res],"zscore")
-image(as.matrix(chr_mat),col=viridis(100))
-image(as.matrix(chr_mat)[get_order(o),get_order(o)],col=viridis(100))
-
-cor_mat<-cor(as.matrix(chr_mat))
-
-image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
-
-png(paste0('./img/',chromo,"_cor_",tmp_res,"_bpt_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
-dev.off()
+chr_raw_mat<-full_f_mat(chr_dat,res_num[tmp_res],"X3")
 
 range_bin<-range(unique(c(chr_dat$X1,chr_dat$X2)))
 f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
 dimnames(chr_mat)<-list(f_chr_bin,f_chr_bin)
+dimnames(chr_raw_mat)<-list(f_chr_bin,f_chr_bin)
 
 empty_rows<-which(apply(chr_mat,1,function(x)all(x==0)))
 empty_cols<-which(apply(chr_mat,2,function(x)all(x==0)))
 
 ok_chr_mat<-chr_mat[-empty_rows,]
 ok_chr_mat<-ok_chr_mat[,-empty_cols]
+
+png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_raw_",tmp_res,"_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(as.matrix(chr_raw_mat)[rownames(ok_chr_mat),colnames(ok_chr_mat)],col=viridis(100))
+dev.off()
+
+
+
+chr_bpt_mat<-full_bpt_mat(bin_inter_tbl,res_num[tmp_res],"bpt.d")
+range_bin<-range(as.numeric(unique(c(bin_inter_tbl$X1,bin_inter_tbl$X2))))
+f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
+dimnames(chr_bpt_mat)<-list(f_chr_bin,f_chr_bin)
+
+ok_chr_bpt_mat<-chr_bpt_mat[rownames(ok_chr_mat),]
+ok_chr_bpt_mat<-ok_chr_bpt_mat[,colnames(ok_chr_mat)]
+
+image(as.matrix(ok_chr_bpt_mat),col=viridis(100))
+d<-as.dist(ok_chr_bpt_mat)
+o <- seriate(d,method = "HC")
+image(as.matrix(ok_chr_bpt_mat)[get_order(o),get_order(o)],col=viridis(100))
+
+cor_mat<-cor(as.matrix(ok_chr_mat))
+
+png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_cor_",tmp_res,'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(cor_mat,col=viridis(100))
+dev.off()
+
+image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
+
+png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_cor_",tmp_res,"_bpt_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
+dev.off()
+
 
 cor_mat<-cor(as.matrix(ok_chr_mat))
 
@@ -204,6 +227,12 @@ names(eig_vec)<-colnames(ok_chr_mat)
 eig_idx<-sort(eig_vec,index.return=T)$ix
 
 image(cor_mat[eig_idx,eig_idx],col=viridis(100))
+
+png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_cor_",tmp_res,"_eig_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(cor_mat[eig_idx,eig_idx],col=viridis(100))
+dev.off()
 
 
 eig_dist_tbl<-expand_grid(X1=names(eig_vec),X2=names(eig_vec)) %>% 
@@ -222,6 +251,12 @@ comp_mat[as.matrix(tmp_tbl %>% filter(comp==1) %>% dplyr::select(X1,X2))]<-1
 comp_mat[as.matrix(tmp_tbl %>% filter(comp== -1) %>% dplyr::select(X1,X2))]<- -1
 
 image(as.matrix(comp_mat),col=viridis(100))
+
+png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_comp_divide_",tmp_res,"_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(as.matrix(comp_mat),col=viridis(100))
+dev.off()
 
 
 bpt_d_break<-quantile(percent_rank(bin_inter_tbl$bpt.d),seq(0,1,length.out=11))

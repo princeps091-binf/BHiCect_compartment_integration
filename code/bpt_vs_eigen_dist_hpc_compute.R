@@ -190,18 +190,29 @@ chr_res_l<-lapply(chr_res_l,function(x){
 out_tbl<-do.call(bind_rows,chr_res_l)
 write_tsv(out_tbl,file = out_file)
 
-
-gg_tmp<-out_tbl %>% 
+out_tbl<-vroom(out_file)
+out_tbl2<-do.call(bind_rows,map(unique(out_tbl$chr),function(chromo){
+  
+  x<-out_tbl %>% 
+    filter(chr==chromo)
+  bpt_d_break<-quantile(percent_rank(x$bpt.d),seq(0,1,length.out=21))
+  
+  return(x %>% 
+           mutate(bpt.dx=findInterval(percent_rank(x$bpt.d),bpt_d_break)))
+  
+}))
+gg_tmp<-out_tbl2 %>% 
   filter(!(is.na(eig.dist))) %>%
-  ggplot(.,aes(as.factor(bpt.d2),eig.dist))+
+  ggplot(.,aes(as.factor(bpt.dx),eig.dist))+
   #  geom_smooth()+
   #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
   geom_boxplot(outlier.size=0.1) #+ geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
-ggsave("~/data_transfer/GM12878_bpt_vs_eig_dist_100kb_box.png",gg_tmp)
+ggsave("~/data_transfer/GM12878_bpt_vs_eig_dist_100kb_box2.png",gg_tmp)
 
-gg_tmp<-out_tbl %>% 
+gg_tmp<-out_tbl2 %>% 
   filter(!(is.na(eig.dist))) %>%
-  ggplot(.,aes(bpt.d,same.comp))+
+  ggplot(.,aes(bpt.dx,same.comp))+
   #  geom_smooth()+
   #  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
   geom_boxplot(outlier.size=0.1) #+ geom_smooth(mapping = aes(bpt.d,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
+ggsave("~/data_transfer/GM12878_bpt_vs_eig_comp_100kb_box2.png",gg_tmp)
