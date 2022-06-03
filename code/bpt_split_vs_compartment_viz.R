@@ -81,8 +81,8 @@ HiC_spec_folder<-"~/Documents/multires_bhicect/data/GM12878/spec_res/"
 
 
 
-chromo<-"chr22"
-tmp_res<-"100kb"
+chromo<-"chr19"
+tmp_res<-"500kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
 chr_spec_res<-get_tbl_in_fn(paste0(HiC_spec_folder,chromo,"_spec_res.Rda"))
@@ -124,25 +124,12 @@ intersect_size<-future_map_int(1:length(cl_bin_intersect),function(i){
 })
 plan(sequential)
 
-cl_bin_union<-punion(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits])
-plan(multisession,workers=5)
-union_size<-future_map_int(1:length(cl_bin_union),function(i){
-  sum(IRanges::width(IRanges::reduce(cl_bin_union[[i]])))
-})
-plan(sequential)
-
 bin_cl_inter_tbl<-bin_cl_inter_tbl %>% 
   mutate(inter.size=intersect_size) %>% 
-#  mutate(union.size=union_size)%>%
-#  mutate(jaccard=inter.size/union.size) %>% 
   mutate(bin=tmp_bins[queryHits],
          cl=chr_cl_tbl$cl[subjectHits]) %>% 
   mutate(cl.lvl=node_lvl[cl])
 
-# max_jaccard_tbl<-bin_cl_inter_tbl %>% 
-#   group_by(bin) %>% 
-#   slice_max(jaccard) %>% 
-#   arrange(jaccard)
 
 max_lvl_tbl<-bin_cl_inter_tbl %>% 
   filter(inter.size==res_num[tmp_res]) %>% 
@@ -169,79 +156,24 @@ bin_inter_tbl<-bin_inter_tbl %>%
   mutate(bpt.d=tmp_d[as.matrix(bin_inter_tbl[,3:4])])
 
 chr_mat<-full_f_mat(chr_dat,res_num[tmp_res],"zscore")
-chr_raw_mat<-full_f_mat(chr_dat,res_num[tmp_res],"X3")
 
 range_bin<-range(unique(c(chr_dat$X1,chr_dat$X2)))
 f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
 dimnames(chr_mat)<-list(f_chr_bin,f_chr_bin)
-dimnames(chr_raw_mat)<-list(f_chr_bin,f_chr_bin)
 
 empty_rows<-which(apply(chr_mat,1,function(x)all(x==0)))
 empty_cols<-which(apply(chr_mat,2,function(x)all(x==0)))
-
-ok_chr_mat<-chr_mat[-empty_rows,]
-ok_chr_mat<-ok_chr_mat[,-empty_cols]
-
-png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_raw_",tmp_res,"_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(as.matrix(chr_raw_mat)[rownames(ok_chr_mat),colnames(ok_chr_mat)],col=viridis(100))
-dev.off()
-
-
-
-chr_bpt_mat<-full_bpt_mat(bin_inter_tbl,res_num[tmp_res],"bpt.d")
-range_bin<-range(as.numeric(unique(c(bin_inter_tbl$X1,bin_inter_tbl$X2))))
-f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
-dimnames(chr_bpt_mat)<-list(f_chr_bin,f_chr_bin)
-
-ok_chr_bpt_mat<-chr_bpt_mat[rownames(ok_chr_mat),]
-ok_chr_bpt_mat<-ok_chr_bpt_mat[,colnames(ok_chr_mat)]
-
-image(as.matrix(ok_chr_bpt_mat),col=viridis(100))
-
-png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_bpt_mat_",tmp_res,'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(as.matrix(ok_chr_bpt_mat),col=viridis(100))
-dev.off()
-
-
-d<-as.dist(ok_chr_bpt_mat)
-o <- seriate(d,method = "HC")
-image(as.matrix(ok_chr_bpt_mat)[get_order(o),get_order(o)],col=viridis(100))
-
-cor_mat<-cor(as.matrix(ok_chr_mat))
-
-png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_cor_",tmp_res,'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(cor_mat,col=viridis(100))
-dev.off()
-
-image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
-
-png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_cor_",tmp_res,"_bpt_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(cor_mat[get_order(o),get_order(o)],col=viridis(100))
-dev.off()
-
+if(length(empty_rows)>0){
+  ok_chr_mat<-chr_mat[-empty_rows,]
+  ok_chr_mat<-ok_chr_mat[,-empty_cols]
+} else{
+  ok_chr_mat<-chr_mat
+}
 
 cor_mat<-cor(as.matrix(ok_chr_mat))
 
 eig_vec<-svd(cor_mat)$v[,1]
 names(eig_vec)<-colnames(ok_chr_mat)
-eig_idx<-sort(eig_vec,index.return=T)$ix
-
-image(cor_mat[eig_idx,eig_idx],col=viridis(100))
-
-png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_cor_",tmp_res,"_eig_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
-par(mar = c(0, 0, 0,0))
-plot.new()
-image(cor_mat[eig_idx,eig_idx],col=viridis(100))
-dev.off()
-
 
 eig_dist_tbl<-expand_grid(X1=names(eig_vec),X2=names(eig_vec)) %>% 
   mutate(binA.eig=eig_vec[X1],
@@ -250,7 +182,6 @@ eig_dist_tbl<-expand_grid(X1=names(eig_vec),X2=names(eig_vec)) %>%
          same.comp=ifelse(sign(binA.eig)*sign(binB.eig)<0,"diff","same"))
 
 comp_mat<-matrix(NA,nrow=nrow(cor_mat),ncol=ncol(cor_mat))
-dimnames(comp_mat)<-list(rownames(cor_mat)[eig_idx],colnames(cor_mat)[eig_idx])
 dimnames(comp_mat)<-dimnames(cor_mat)
 
 tmp_tbl<-eig_dist_tbl %>% 
@@ -262,27 +193,39 @@ comp_mat[as.matrix(tmp_tbl %>% filter(comp== -1) %>% dplyr::select(X1,X2))]<- -1
 image(as.matrix(comp_mat),col=viridis(2))
 image(as.matrix(cor_mat),col=viridis(100))
 
-png(paste0('~/Documents/multires_bhicect/weeklies/weekly59/img/',chromo,"_comp_divide_",tmp_res,"_mat",'.png'), width =40,height = 43,units = 'mm',type='cairo',res=5000)
+png(paste0('~/Documents/multires_bhicect/Poster/img/F1',chromo,"_comp_divide_",tmp_res,"_mat",'.png'), width =40,height = 40,units = 'mm',type='cairo',res=5000)
 par(mar = c(0, 0, 0,0))
 plot.new()
-image(as.matrix(comp_mat),col=viridis(100))
+image(as.matrix(comp_mat),col=viridis(2))
 dev.off()
 
 
-bpt_d_break<-quantile(percent_rank(bin_inter_tbl$bpt.d),seq(0,1,length.out=11))
-bin_inter_tbl %>% 
-  inner_join(.,eig_dist_tbl) %>% 
-  filter(!(is.na(eig.dist))) %>%
-  mutate(bpt.d2=findInterval(percent_rank(bin_inter_tbl$bpt.d),bpt_d_break)) %>% 
-  mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
-  ggplot(.,aes(as.factor(bpt.d2),eig.dist))+
-#  geom_smooth()+
-#  geom_point(alpha=0.01)#+ facet_grid(.~same.comp,scales="free")
-  geom_boxplot(outlier.size=0.1) + geom_smooth(mapping = aes(bpt.d2,eig.dist),se=F) + facet_grid(.~same.comp,scales="free")
+bpt_split_mat<-matrix(NA,nrow=nrow(cor_mat),ncol=ncol(cor_mat))
+dimnames(bpt_split_mat)<-dimnames(cor_mat)
 
-bin_inter_tbl %>% 
-  left_join(.,eig_dist_tbl,by=c("X1"="V1","X2"="V2")) %>% 
-  filter(!(is.na(eig.dist))) %>%
-  mutate(gdist=abs(as.numeric(X1)-as.numeric(X2))) %>% 
-  ggplot(.,aes(same.comp,bpt.d))+
-  geom_boxplot(outlier.size=0.1)
+tmp_bin<-rownames(bpt_split_mat)
+tmp_bin_cl_tbl<-bin_inter_tbl %>% 
+  filter(X1 %in% tmp_bin & X2 %in% tmp_bin)
+target_cl<-unique(c(tmp_bin_cl_tbl$cl.A,tmp_bin_cl_tbl$cl.B))  
+bin_top_parent<-unlist(lapply(node_ancestor[target_cl],function(x){
+  rev(x)[2]
+}))
+top_parent<-unique(bin_top_parent)
+names(bin_top_parent)<-target_cl
+tmp_bpt_tbl<-tmp_bin_cl_tbl %>% 
+  mutate(top.A=bin_top_parent[cl.A],
+         top.B=bin_top_parent[cl.B]) %>% 
+  filter(top.A==top.B)
+bpt_split_mat[as.matrix(tmp_bpt_tbl %>% filter(top.A==top_parent[1]) %>% dplyr::select(X1,X2))]<-1
+bpt_split_mat[as.matrix(tmp_bpt_tbl %>% filter(top.A==top_parent[2]) %>% dplyr::select(X1,X2))]<--1
+image(as.matrix(bpt_split_mat),col=viridis(2))
+image(as.matrix(cor_mat),col=viridis(100))
+png(paste0('~/Documents/multires_bhicect/Poster/img/F1/',chromo,"_bpt_divide_",tmp_res,"_mat",'.png'), width =40,height = 40,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(as.matrix(bpt_split_mat),col=viridis(2))
+dev.off()
+
+# Compute Jaccard index of shared clustering
+bpt_split_vec<-ifelse(bin_top_parent==top_parent[1],1,-1)
+bin_to_cl_vec[bpt_split_vec]

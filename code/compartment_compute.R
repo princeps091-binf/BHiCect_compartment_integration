@@ -55,23 +55,31 @@ full_f_mat<-function(cl_mat,res,var){
 #-----------------------------------------
 HiC_dat_folder<-"~/Documents/multires_bhicect/data/GM12878/"
 
-chromo<-"chr19"
-tmp_res<-"100kb"
+chromo<-"chr22"
+tmp_res<-"500kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
 
-chr_mat<-full_f_mat(chr_dat,res_num[tmp_res],"zscore")
+chr_mat<-full_f_mat(chr_dat,res_num[tmp_res],"X3")
 range_bin<-range(unique(c(chr_dat$X1,chr_dat$X2)))
 f_chr_bin<-seq(range_bin[1],range_bin[2],by=res_num[tmp_res])
 
 dimnames(chr_mat)<-list(f_chr_bin,f_chr_bin)
-image(as.matrix(chr_mat),col=viridis(100))
+#image(as.matrix(chr_mat),col=viridis(100))
 empty_rows<-which(apply(chr_mat,1,function(x)all(x==0)))
 empty_cols<-which(apply(chr_mat,2,function(x)all(x==0)))
-
-ok_chr_mat<-chr_mat[-empty_rows,]
-ok_chr_mat<-ok_chr_mat[,-empty_cols]
-image(as.matrix(ok_chr_mat),col=viridis(100))
+if(length(empty_rows)>0){
+  ok_chr_mat<-chr_mat[-empty_rows,]
+  ok_chr_mat<-ok_chr_mat[,-empty_cols]
+  
+} else{
+  ok_chr_mat<-chr_mat
+}
+png(paste0('~/Documents/multires_bhicect/Poster/img/',chromo,"_",tmp_res,"_log10_mat",'.png'), width =40,height = 40,units = 'mm',type='cairo',res=5000)
+par(mar = c(0, 0, 0,0))
+plot.new()
+image(log10(as.matrix(ok_chr_mat)),col=viridis(100))
+dev.off()
 
 cor_mat<-cor(as.matrix(ok_chr_mat))
 image(cor_mat,col=viridis(100))
