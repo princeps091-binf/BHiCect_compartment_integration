@@ -56,7 +56,7 @@ full_f_mat<-function(cl_mat,res,var){
 HiC_dat_folder<-"~/Documents/multires_bhicect/data/GM12878/"
 
 chromo<-"chr22"
-tmp_res<-"500kb"
+tmp_res<-"5kb"
 
 chr_dat<-compute_chr_res_zscore_fn(HiC_dat_folder,tmp_res,chromo,res_num)
 
@@ -75,7 +75,7 @@ if(length(empty_rows)>0){
 } else{
   ok_chr_mat<-chr_mat
 }
-png(paste0('~/Documents/multires_bhicect/Poster/img/',chromo,"_",tmp_res,"_log10_mat",'.png'), width =40,height = 40,units = 'mm',type='cairo',res=5000)
+png(paste0('~/Documents/multires_bhicect/Poster/img/',chromo,"_",tmp_res,"_log10_mat",'.png'), width =40,height = 40,units = 'mm',type='cairo',res=1000)
 par(mar = c(0, 0, 0,0))
 plot.new()
 image(log10(as.matrix(ok_chr_mat)),col=viridis(100))
