@@ -98,11 +98,8 @@ cl_GRange_l<-GRangesList(chr_cl_tbl$GRange)
 bin_cl_inter_tbl<-findOverlaps(chr_bin_GRange,cl_GRange_l) %>% 
   as_tibble
 # Make parallel
-intersect_size<-unlist(lapply(
-  lapply(
-    pintersect(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits]),
-    width),
-  sum))
+intersect_cpu_l<-as.list(width(pintersect(chr_bin_GRange[bin_cl_inter_tbl$queryHits],cl_GRange_l[bin_cl_inter_tbl$subjectHits])))
+intersect_size<-map_int(intersect_cpu_l,sum)
 
 bin_cl_inter_tbl<-bin_cl_inter_tbl %>% 
   mutate(inter.size=intersect_size) %>% 
@@ -111,7 +108,7 @@ bin_cl_inter_tbl<-bin_cl_inter_tbl %>%
   mutate(cl.lvl=node_lvl[cl])
 
 max_lvl_tbl<-bin_cl_inter_tbl %>% 
-  filter(inter.size==res_num[tmp_res]) %>% 
+  filter(inter.size>=res_num[tmp_res]) %>% 
   group_by(bin) %>% 
   slice_max(cl.lvl)
 

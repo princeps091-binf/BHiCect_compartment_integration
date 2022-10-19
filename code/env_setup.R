@@ -11,6 +11,7 @@ renv::install("data.tree")
 renv::install("igraph")
 renv::install("viridis")
 renv::install("seriation")
+renv::install("caret")
 
 renv::install("bioc::GenomicRanges")
 renv::snapshot()
